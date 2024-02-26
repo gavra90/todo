@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:todo/cubit/person/person_cubit.dart';
 import 'package:todo/cubit/todo/todo_cubit.dart';
 import 'package:todo/pages/home.dart';
 
@@ -19,9 +18,6 @@ class TodoApp extends StatelessWidget {
         BlocProvider(
           create: (context) => TodoCubit(),
         ),
-        BlocProvider(
-          create: (context) => PersonCubit(),
-        ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -30,7 +26,7 @@ class TodoApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
           useMaterial3: true,
         ),
-        home: const HomePage(),
+        home: HomePage(),
       ),
     );
   }
