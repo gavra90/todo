@@ -7,7 +7,11 @@ on:
       - develop
 jobs:
   build:
-    runs-on: ubuntu-latest
+    name: Build Apk and IOS
+    runs-on: macos-latest
+    outputs:
+      androidApk: ${{ steps.android.outputs.apk }}
+      iosBuildFile: ${{ steps.ios.outputs.apk }}
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
@@ -26,8 +30,13 @@ jobs:
       - name: Install dependencies #this should be one job
         run: flutter pub get
       - name: Build android apk and appBundle #this should be separate job
-        run: flutter build apk
+        id: android
+        run: |
+          flutter build apk
+          echo "::set-output name=apk::build/app/outputs/flutter-apk/app-release.apk"
+
       - name: Build ios #this one also, since only jobs can run in parallel
+        id: ios
         run: | 
           flutter build ios --release --no-codesign
           cd build/ios/iphoneos
@@ -36,23 +45,30 @@ jobs:
           ln -s ../Runner.app
           cd ..
           zip -r app.ipa Payload
+          echo "::set-output name=apk::build/ios/app.ipa"
       - name: Push to releases
         uses: ncipollo/release-action@v1
         with:
           artifacts: 'build/app/outputs/flutter-apk/app-release.apk, build/ios/app.ipa'
           tag: v1.0.${{ github.run_number }}
           token: ${{ secrets.GH_TOKEN }}
+
+  release:
+    name: Release to Firebase Distribution
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
       - name: Upload Android artifact to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
           appId: ${{secrets.ANDROID_APPID}}
           serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
           groups: testers
-          file: build/app/outputs/flutter-apk/app-release.apk
+          file: ${{ needs.build.outputs.androidApk }}
       - name: Upload IOS artifact to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
           appId: ${{secrets.IOS_APPID}}
           serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
           groups: testers
-          file: build/ios/app.ipa
+          file: ${{ needs.build.outputs.iosBuildFile }}
