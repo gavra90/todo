@@ -33,7 +33,7 @@ jobs:
         id: android
         run: |
           flutter build apk
-          echo "::set-output name=apk::build/app/outputs/flutter-apk/app-release.apk"
+          echo "::set-output name=apk::$( cat build/app/outputs/flutter-apk/app-release.apk) "
 
       - name: Build ios #this one also, since only jobs can run in parallel
         id: ios
@@ -45,7 +45,7 @@ jobs:
           ln -s ../Runner.app
           cd ..
           zip -r app.ipa Payload
-          echo "::set-output name=apk::build/ios/app.ipa"
+          echo "::set-output name=apk::$( cat build/ios/app.ipa )"
       - name: Push to releases
         uses: ncipollo/release-action@v1
         with:
@@ -58,17 +58,22 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Create Android apk
+        run: echo ${{ needs.build.outputs.androidApk }} >> app-release.apk
       - name: Upload Android artifact to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
           appId: ${{secrets.ANDROID_APPID}}
           serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
           groups: testers
-          file: ${{ needs.build.outputs.androidApk }}
+          file: app-release.apk
+
+      - name: Create Ios ipa
+        run: echo ${{ needs.build.outputs.iosBuildFile }} >> app.ipa
       - name: Upload IOS artifact to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
           appId: ${{secrets.IOS_APPID}}
           serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
           groups: testers
-          file: ${{ needs.build.outputs.iosBuildFile }}
+          file: app.ipa
