@@ -23,11 +23,11 @@ jobs:
           flutter-version-file: pubspec.yaml
       - run: flutter --version
 
-      - name: Install dependencies
+      - name: Install dependencies #this should be one job
         run: flutter pub get
-      - name: Build android apk and appBundle
+      - name: Build android apk and appBundle #this should be separate job
         run: flutter build apk
-      - name: Build ios
+      - name: Build ios #this one also, since only jobs can run in parallel
         run: | 
           flutter build ios --release --no-codesign
           cd build/ios/iphoneos
